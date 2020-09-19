@@ -1,11 +1,7 @@
 package com.example.qcrop;
 
-import android.app.ProgressDialog;
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.provider.ContactsContract;
-import android.text.TextUtils;
 import android.util.Log;
 
 import org.opencv.android.Utils;
@@ -18,6 +14,8 @@ import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
 import java.util.ArrayList;
+import java.util.Dictionary;
+import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.List;
 
@@ -26,7 +24,7 @@ public class cropping {
     public cropping() {
     }
 
-    public List<List<Integer>> extractquestion(Bitmap bmp) throws Exception {
+    public List<List<Integer>> extractquestion(Bitmap bmp) {
 
 
         List<List<Integer>> responses = new ArrayList<>();
@@ -43,14 +41,15 @@ public class cropping {
         Mat thresh = new Mat();
         Imgproc.threshold(gray, thresh, 0, 255, Imgproc.THRESH_BINARY_INV | Imgproc.THRESH_OTSU);
 
-        Mat kernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(12, 50));
+        Mat kernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(20, 80));
         Mat dilate = new Mat();
         Mat drawrect = new Mat();
         drawrect = mat;
 
         Imgproc.dilate(thresh, dilate, kernel, new Point(-1, -1), 2);
         Bitmap bmpdilate;
-        //Utils.matToBitmap(dilate, bmpdilate);
+//        bmpdilate = Bitmap.createBitmap(dilate.cols(), dilate.rows(), Bitmap.Config.ARGB_8888);
+//        Utils.matToBitmap(dilate, bmpdilate);
         ArrayList<MatOfPoint> contours = new ArrayList<MatOfPoint>();
         Imgproc.findContours(dilate, contours, new Mat(), Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE);
         Iterator<MatOfPoint> each;
@@ -61,8 +60,9 @@ public class cropping {
         while (each.hasNext()) {
             MatOfPoint contour = each.next();
             double area = Imgproc.contourArea(contour);
+            Log.i("CONTAREA", String.valueOf(area));
             Rect rect;
-            if (Imgproc.contourArea(contour) < 20000) {
+            if (Imgproc.contourArea(contour) < 60000 && Imgproc.contourArea(contour)>25000) {
                 rect = Imgproc.boundingRect(contour);
                 Log.i("Rect", rect.toString());
                 //Imgproc.rectangle(drawrect, rect, new Scalar(255, 0, 0, 255), 8);
@@ -90,7 +90,7 @@ public class cropping {
             qheight.clear();
             while (each1.hasNext()) {
                 MatOfPoint contour1 = each1.next();
-                if (Imgproc.contourArea(contour1) > 300 && Imgproc.contourArea(contour1) < 1000) {
+                if (Imgproc.contourArea(contour1) > 10000 && Imgproc.contourArea(contour1) < 20000) {
                     Rect rect1 = Imgproc.boundingRect(contour1);
                     qheight.add(rect1.y);
                 }
@@ -105,7 +105,7 @@ public class cropping {
             if (i == 0) {
                 Rect roi = new Rect(new Point(0, qheight.get(0)), new Point(mat.width(), mat.height()));
 //                Rect roi = new Rect(0, qheight.get(0), matcopy.width(), matcopy.height());
-                //Imgproc.rectangle(drawrect, new Point(0, qheight.get(0)), new Point(mat.width(), mat.height()), new Scalar(255, 0, 0, 255), 8);
+                Imgproc.rectangle(drawrect, new Point(0, qheight.get(0)), new Point(mat.width(), mat.height()), new Scalar(255, 0, 0, 255), 8);
 
                 if (roi.x >= 0 && roi.y >= 0 && roi.width <= mat.cols() && roi.height <= mat.rows()) {
                     //Log.i("Cropping entered", "hjkbkjsgb");
@@ -162,7 +162,7 @@ public class cropping {
             } else if (i != 0) {
                 Bitmap bitmap;
                 Rect roi = new Rect(new Point(0, qheight.get(i)), new Point(mat.width(), qheight.get(i - 1)));
-                //Imgproc.rectangle(drawrect, new Point(0, qheight.get(i)), new Point(mat.width(), qheight.get(i - 1)), new Scalar(255, 0, 0, 255), 8);
+                Imgproc.rectangle(drawrect, new Point(0, qheight.get(i)), new Point(mat.width(), qheight.get(i - 1)), new Scalar(255, 0, 0, 255), 8);
                 if (roi.x >= 0 && roi.y >= 0 && roi.width <= mat.cols() && roi.height <= mat.rows()) {
                     // Log.i("Cropping entered", "looop2");
                     Mat cropped = new Mat(mat, roi);
@@ -217,7 +217,7 @@ public class cropping {
             }
         }
         return responses;
-//        bmpdilate = Bitmap.createBitmap(drawrect.cols(), drawrect.rows(), Bitmap.Config.ARGB_8888);
+//        bmpdilate = Bitmap.createBitmap(dilate.cols(), dilate.rows(), Bitmap.Config.ARGB_8888);
 //        Utils.matToBitmap(drawrect, bmpdilate);
 //        return bmpdilate;
     }
@@ -276,7 +276,7 @@ public class cropping {
             }
             rectanglecoord.addAll(response2);
             rectanglecoord.addAll(response1);
-            
+
         }else {
             rectanglecoord = extractquestion(bitmap);
         }
@@ -284,8 +284,47 @@ public class cropping {
 
     return rectanglecoord;
     }
+    public String doOCR(Context context, final Bitmap bitmap) {
+        final TesseractOCR mTessOCR = new TesseractOCR(context, "eng");
+        return mTessOCR.getOCRResult(bitmap);
+    }
+    public Dictionary<String, String> answerkey(Context context, Bitmap bmp){
+        Mat mat = new Mat();
+        Utils.bitmapToMat(bmp, mat);
+        Mat gray = new Mat();
+        Imgproc.cvtColor(mat, gray, Imgproc.COLOR_BGR2GRAY);
+        Mat thresh = new Mat();
+        Imgproc.threshold(gray, thresh, 0, 255, Imgproc.THRESH_BINARY_INV | Imgproc.THRESH_OTSU);
+        Bitmap threshimg = Bitmap.createBitmap(mat.cols(), mat.rows(), Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(thresh, threshimg);
+        String text = doOCR(context, threshimg);
+        Log.i("ANS", text);
+        String[] lines = text.split("\n");
+        Log.i("lines", String.valueOf(lines));
+        List<String> quesnumber = new ArrayList<>();
+        List<String> answer = new ArrayList<>();
+        int count = 0;
+        for(int i=0;i<lines.length;i++) {
+            if (lines[i].contains("Answer")) {
+                count = i;
+            }
+        }
+        for(int x=count+1;x<lines.length;x++){
+            String[] words1 = lines[x].split(" ");
+            for(int j=0;j<words1.length;j++){
+                if(j%2==0){
+                    quesnumber.add(words1[j]);
+                }else {
+                    answer.add(words1[j]);
+                }
+            }
+        }
+        Log.i("Question", String.valueOf(quesnumber));
+        Log.i("Answers", String.valueOf(answer));
+        Dictionary<String, String> responseanswer = new Hashtable<>();
+        for(int i=0;i<quesnumber.size();i++){
+            responseanswer.put(quesnumber.get(i), answer.get(i));
+        }
+        return responseanswer;
+    }
 }
-//    private String doOCR(final Bitmap bitmap) {
-//        final TesseractOCR mTessOCR = new TesseractOCR(mcontext, "eng");
-//        return mTessOCR.getOCRResult(bitmap);
-//    }

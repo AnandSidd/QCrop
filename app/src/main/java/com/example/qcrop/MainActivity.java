@@ -21,7 +21,6 @@ public class MainActivity extends AppCompatActivity {
     cropping crop = new cropping();
     TextView coordtextview;
     List<List<Integer>> responses = new ArrayList<>();
-    //TesseractOCR ocr = new TesseractOCR(getApplicationContext(), "eng");
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,16 +29,18 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         imageView = findViewById(R.id.quesimageview);
         coordtextview = findViewById(R.id.coordtextview);
-        final Bitmap bmp = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.halfpage);
+        final Bitmap bmp = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.answerk);
         imageView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 try {
                     imageView.setVisibility(View.INVISIBLE);
+                    //imageView.setImageBitmap(crop.answerkey(bmp));
                     coordtextview.setVisibility(View.VISIBLE);
-                    responses = crop.autocrop(bmp);
-                    Log.i("Rectangle Coordinates", responses.toString());
-                    coordtextview.setText(responses.toString());
+                    coordtextview.setText(String.valueOf(crop.answerkey(getApplicationContext(), bmp)));
+//                    responses = crop.autocrop(bmp);
+//                    Log.i("Rectangle Coordinates", responses.toString());
+                    //coordtextview.setText(responses.toString());
                     Log.i("Tapped","Imageview Tapped");
                 } catch (Exception e) {
                     e.printStackTrace();
