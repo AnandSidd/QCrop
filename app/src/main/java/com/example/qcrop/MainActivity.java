@@ -29,7 +29,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         imageView = findViewById(R.id.quesimageview);
         coordtextview = findViewById(R.id.coordtextview);
-        final Bitmap bmp = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.answerk);
+        final Bitmap bmp = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.pp);
         imageView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -37,9 +37,9 @@ public class MainActivity extends AppCompatActivity {
                     imageView.setVisibility(View.INVISIBLE);
                     //imageView.setImageBitmap(crop.answerkey(bmp));
                     coordtextview.setVisibility(View.VISIBLE);
-                    coordtextview.setText(String.valueOf(crop.answerkey(getApplicationContext(), bmp)));
-//                    responses = crop.autocrop(bmp);
-//                    Log.i("Rectangle Coordinates", responses.toString());
+                    coordtextview.setText(String.valueOf(crop.autocrop(bmp)));
+                    responses = crop.autocrop(bmp);
+                    Log.i("Rectangle Coordinates", responses.toString());
                     //coordtextview.setText(responses.toString());
                     Log.i("Tapped","Imageview Tapped");
                 } catch (Exception e) {

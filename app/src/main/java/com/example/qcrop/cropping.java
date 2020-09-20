@@ -5,6 +5,7 @@ import android.graphics.Bitmap;
 import android.util.Log;
 
 import org.opencv.android.Utils;
+import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.Point;
@@ -233,30 +234,21 @@ public class cropping {
         Mat gray = new Mat();
         Imgproc.cvtColor(mat, gray, Imgproc.COLOR_BGR2GRAY);
 
-        Mat thresh = new Mat();
-        Imgproc.threshold(gray, thresh, 0, 255, Imgproc.THRESH_BINARY_INV | Imgproc.THRESH_OTSU);
+        Mat thresh2 = new Mat();
+        Imgproc.threshold(gray, thresh2, 0, 255, Imgproc.THRESH_BINARY | Imgproc.THRESH_OTSU);
 
-        Mat kernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(10, 10));
-        Mat dilate = new Mat();
-        Mat drawrect = new Mat();
-        drawrect = mat;
-        Bitmap bmpdilate = null;
+        Mat columns = new Mat();
+        Core.reduce(thresh2, columns, 0, Core.REDUCE_AVG);
+        Core.MinMaxLocResult minlooc = Core.minMaxLoc(columns);
+        double centre  = minlooc.minLoc.x;
+        Log.i("Heightimage", String.valueOf(bitmap.getWidth()));
+        Log.i("Centreeee", String.valueOf(centre));
+        int actualcentre = bitmap.getWidth()/2;
 
-        Imgproc.dilate(thresh, dilate, kernel, new Point(-1, -1), 2);
-
-
-        ArrayList<MatOfPoint> contours = new ArrayList<MatOfPoint>();
-        Imgproc.findContours(dilate, contours, new Mat(), Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE);
-        Iterator<MatOfPoint> each;
-        each = contours.iterator();
-        while (each.hasNext()) {
-            MatOfPoint contour = each.next();
-            Rect rect = Imgproc.boundingRect(contour);
-            if(rect.height>mat.height()*0.75 && rect.height<mat.height()) {
-                //Imgproc.rectangle(drawrect, rect, new Scalar(255, 0, 0, 255), 5);
-                centreline = true;
-            }
+        if(centre > actualcentre-500 && centre< actualcentre + 500){
+            centreline = true;
         }
+
         if(centreline){
             Bitmap half1 = Bitmap.createBitmap(bitmap,0,0,bitmap.getWidth()/2, bitmap.getHeight());
             Bitmap half2 = Bitmap.createBitmap(bitmap,bitmap.getWidth()/2 + 30,0,bitmap.getWidth()/2 - 30, bitmap.getHeight());
@@ -281,7 +273,7 @@ public class cropping {
             rectanglecoord = extractquestion(bitmap);
         }
 
-
+    Log.i("centreline", String.valueOf(centreline));
     return rectanglecoord;
     }
     public String doOCR(Context context, final Bitmap bitmap) {
