@@ -8,6 +8,8 @@ import android.util.Log;
 import org.opencv.android.Utils;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
+import org.opencv.core.MatOfFloat;
+import org.opencv.core.MatOfInt;
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
@@ -41,7 +43,6 @@ public class cropping {
         Mat gray = new Mat();
         Imgproc.cvtColor(mat, gray, Imgproc.COLOR_BGR2GRAY);
 
-
         Mat thresh = new Mat();
         Imgproc.threshold(gray, thresh, 0, 255, Imgproc.THRESH_BINARY_INV | Imgproc.THRESH_OTSU);
 
@@ -51,22 +52,23 @@ public class cropping {
 
         Imgproc.dilate(thresh, dilate, kernel, new Point(-1, -1), 2);
 
-        Mat dilate2 = dilate.rowRange(dilate.rows()/5, dilate.rows());
+        Mat dilate2 = dilate.rowRange(dilate.rows()/6, dilate.rows());
 
         Mat columnss = new Mat();
         Core.reduce(dilate2, columnss, 0, Core.REDUCE_AVG);
+
         int flag = -1;
         double crop1=0.0, crop2=0.0;
         for(int i=0;i<columnss.cols();i++){
             double[] pixelval = columnss.get(0, i);
-            //Log.i("Column pixels", String.valueOf(pixelval[0]));
+            Log.i("Column pixels", String.valueOf(pixelval[0]));
             if(pixelval[0] > 0 && flag<0){
                 crop1 = i;
                 flag++;
             }
             if(pixelval[0]< 5 && flag==0){
                 crop2 = i;
-                Log.i("Column pixels", String.valueOf(crop2));
+                //Log.i("Column pixels", String.valueOf(crop2));
                 flag++;
             }
             if (flag==1){
@@ -98,12 +100,13 @@ public class cropping {
                 rect = Imgproc.boundingRect(contour);
                 //Log.i("Rect", rect.toString());
                 Imgproc.rectangle(cropcopy, rect, new Scalar(255, 0, 0, 255), 8);
-                qnowidth = rect.x + rect.width;
+                qnowidth = (int)(crop1) + rect.width;
                 qheight.add(rect.y);
             }
         }
-        bmpdilate = Bitmap.createBitmap(cropped1.cols(), cropped1.rows(), Bitmap.Config.ARGB_8888);
-        Utils.matToBitmap(cropcopy, bmpdilate);
+
+        bmpdilate = Bitmap.createBitmap(mat.cols(), mat.rows(), Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(mat, bmpdilate);
 
         for (int i = 0; i < qheight.size(); i++) {
             if (i == 0) {
@@ -138,12 +141,24 @@ public class cropping {
 
         Mat thresh2 = new Mat();
         Imgproc.threshold(gray, thresh2, 0, 255, Imgproc.THRESH_BINARY | Imgproc.THRESH_OTSU);
+        Mat kernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(5, 100));
+        Mat dilate = new Mat();
+        //Mat drawrect = mat.clone();
+
+        Imgproc.dilate(thresh2, dilate, kernel, new Point(-1, -1), 2);
+
+        Mat dilate2 = dilate.rowRange(dilate.rows()/6, dilate.rows());
+
         Mat columns = new Mat();
-        Core.reduce(thresh2, columns, 0, Core.REDUCE_AVG);
+        Core.reduce(dilate2, columns, 0, Core.REDUCE_AVG);
         Log.i("Columns", Arrays.toString(columns.get(0, bitmap.getWidth()/2)));
+
+        //columns = columns.colRange(columns.cols()/2 - 10, columns.cols()/2 + 10);
+
+
         double[] centrepixelval = columns.get(0, bitmap.getWidth()/2);
 
-        if(centrepixelval[0] > 250){
+        if(centrepixelval[0] > 253){
             centreline = true;
         }
 
